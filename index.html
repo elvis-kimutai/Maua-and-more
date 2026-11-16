@@ -82,7 +82,12 @@
     </div>
 
     <div class="filters" id="filters"></div>
+    <div class="filters sub" id="subFilters"></div>
+    <div class="toolbar"><span id="resultCount"></span>
+      <label>Sort by <select id="sortSel"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></label>
+    </div>
     <div class="grid" id="productGrid"></div>
+    <div class="more"><button class="btn" id="moreBtn" hidden>Load more</button></div>
     <p class="empty" id="emptyMsg" hidden>No items match your search. Try another word 🌸</p>
   </section>
 
@@ -124,7 +129,7 @@
   <!-- ABOUT -->
   <section class="section about" id="about">
     <div class="section-head">
-      <img src="logo.png" alt="Maua & More logo" class="about-logo" />
+      <img src="images/Maua.png" alt="Maua & More logo" class="about-logo" />
       <h2>About Maua & More</h2>
       <p>Where every petal tells a story</p>
     </div>
@@ -139,9 +144,9 @@
   <section class="section testimonials">
     <div class="section-head"><span class="flower">✿</span><h2>Happy Customers</h2></div>
     <div class="t-grid">
-      <blockquote>"The bouquet was even prettier than the photos. She cried happy tears!"<cite>— Wanjiru M.</cite></blockquote>
-      <blockquote>"Fast delivery and the roses were so fresh. I'll definitely order again."<cite>— Brian O.</cite></blockquote>
-      <blockquote>"Perfect anniversary gift box. Beautifully packaged and on time."<cite>— Amina K.</cite></blockquote>
+      <blockquote>"The bouquet was even prettier than the photos. She cried happy tears!"<cite>— Chebet M.</cite></blockquote>
+      <blockquote>"Fast delivery and the roses were so fresh. I'll definitely order again."<cite>— Evans K.</cite></blockquote>
+      <blockquote>"Perfect anniversary gift box. Beautifully packaged and on time."<cite>— Amina F.</cite></blockquote>
     </div>
   </section>
 
@@ -150,8 +155,8 @@
     <div class="section-head"><span class="flower">✿</span><h2>Get in Touch</h2><p>Custom orders, weddings and bulk gifts welcome</p></div>
     <div class="contact-wrap">
       <div class="contact-info">
-        <p>📍 Basic Mall, Elgon View, Eldoret</p>
-        <p>📞 <a href="tel:+254798653306">+254 798 653 306</a></p>
+        <p>📍 Basic Mall Elgon View, Eldoret</p>
+        <p>📞 <a href="tel:+254183003309">+254 183 003 309</a></p>
         <p>💬 <a id="waLink" href="#" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
         <p>🕐 Mon–Sun: 8:00 AM – 8:00 PM</p>
       </div>
@@ -193,6 +198,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="products.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

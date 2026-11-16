@@ -9,20 +9,8 @@ const SETTINGS = {
 };
 
 // Put photos in /images named <id>.jpg (e.g. images/classic-red.jpg). If missing, a drawn illustration shows.
-const PRODUCTS = [
-  { id:"classic-red",  name:"Classic Red Roses Bouquet", price:2500, cat:"Roses",     occ:["Valentine's","Anniversary","Just Because"], style:"bouquet", color:"#c4122f", wrap:"#2b2b2b", img:"images/classic-red.jpg",tag:"Best Seller" },
-  { id:"pink-roses",   name:"Pink Roses Bouquet",        price:2300, cat:"Roses",     occ:["Birthday","Just Because"],                  style:"bouquet", color:"#f06292", wrap:"#f8bbd0" },
-  { id:"white-roses",  name:"White Roses Bouquet",       price:2400, cat:"Roses",     occ:["Wedding","Anniversary"],                    style:"bouquet", color:"#fff8ef", wrap:"#f1e4da" },
-  { id:"mixed-roses",  name:"Mixed Roses Bouquet",       price:2700, cat:"Roses",     occ:["Birthday","Anniversary"],                   style:"bouquet", color:"#e8476b", wrap:"#f7a8c0", mix:true },
-  { id:"rose-box",     name:"Rose Box (Premium)",        price:3500, cat:"Gift Boxes",occ:["Valentine's","Anniversary"],                style:"box",     color:"#c4122f", wrap:"#1f1f1f", tag:"Premium" },
-  { id:"lavender",     name:"Lavender Roses Bouquet",    price:2800, cat:"Roses",     occ:["Birthday","Just Because"],                  style:"bouquet", color:"#b58ad6", wrap:"#d9c2ee" },
-  { id:"heart-box",    name:"Heart Shape Rose Box",      price:4200, cat:"Gift Boxes",occ:["Valentine's","Anniversary","Wedding"],      style:"heart",   color:"#c4122f", wrap:"#1f1f1f", tag:"Love" },
-  { id:"yellow-roses", name:"Yellow Roses Bouquet",      price:2200, cat:"Roses",     occ:["Birthday","Just Because"],                  style:"bouquet", color:"#f6c026", wrap:"#d9b68b" },
-  { id:"lily-mix",     name:"Pink Lily & Rose Bouquet",  price:3200, cat:"Bouquets",  occ:["Birthday","Wedding"],                       style:"bouquet", color:"#e91e8c", wrap:"#fbc4dc", lily:true, tag:"New" },
-  { id:"gift-set",     name:"Flowers + Chocolate Gift Set", price:4500, cat:"Gift Sets", occ:["Birthday","Anniversary","Valentine's"],  style:"box",     color:"#d6336c", wrap:"#7a1f45" },
-  { id:"teddy-combo",  name:"Teddy & Roses Combo",       price:3900, cat:"Gift Sets", occ:["Valentine's","Birthday"],                   style:"bouquet", color:"#ff5c8a", wrap:"#ffd0df", teddy:true },
-  { id:"wedding-arch", name:"Bridal Bouquet",            price:6500, cat:"Bouquets",  occ:["Wedding"],                                  style:"bouquet", color:"#ffffff", wrap:"#f4e6d6", pearl:true, tag:"Bridal" }
-];
+// Products are loaded from products.js
+const PRODUCTS = window.PRODUCTS || [];
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -33,7 +21,11 @@ const store = {
 };
 let cart = store.get("mm_cart", {});       // {id: qty}
 let wish = store.get("mm_wish", []);
-let activeCat = "All", activeOcc = null, query = "";
+let activeCat = "All", activeSub = null, activeOcc = null, query = "", sortBy = "featured", shown = 24;
+const PAGE = 24;
+const imgSrc = p => p.img;
+const localSrc = p => `images/${p.id}.jpg`;
+for(const id of Object.keys(cart)) if(!PRODUCTS.find(p=>p.id===id)) delete cart[id];
 
 /* ---------- illustration generator (fallback when no photo) ---------- */
 function shade(hex, amt){
@@ -102,44 +94,50 @@ function art(p){
     for(let i=0;i<34;i++){ const t=r()*Math.PI*2, d=Math.sqrt(r()); const x=150+Math.cos(t)*d*78, y=140+Math.sin(t)*d*58+(Math.abs(Math.cos(t))*0); body += rose(x,y,13,p.color); }
     body += `<path d="M85 195 q65 55 130 0" fill="none" stroke="#d6336c" stroke-width="10"/>`;
   }
-  return `<img src="images/hero f3.jpg" alt="${p.name}" style="width: 100%; height: 100%; object-fit: contain;">`;
-  /*return `<img src="images/${p.image}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: contain;">`;
-/* return `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${p.name}">${bg}${body}</svg>`; */ 
+  return `<img src="images/Maua.png" alt="${p.name}" style="width: 100%; height: 100%; object-fit: contain;">`;
+  /*return `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${p.name}">${bg}${body}</svg>`;*/
 }
 
 /* ---------- render ---------- */
 function buildFilters(){
   const cats = ["All", ...new Set(PRODUCTS.map(p=>p.cat))];
   $("#filters").innerHTML = cats.map(c=>`<button class="chip ${c===activeCat&&!activeOcc?'on':''}" data-cat="${c}">${c}</button>`).join("");
+  const subs = activeCat==="All" ? [] : [...new Set(PRODUCTS.filter(p=>p.cat===activeCat).map(p=>p.sub).filter(Boolean))];
+  $("#subFilters").innerHTML = subs.length>1 ? [`<button class="chip sm ${!activeSub?'on':''}" data-sub="">All ${activeCat}</button>`, ...subs.map(s=>`<button class="chip sm ${s===activeSub?'on':''}" data-sub="${s}">${s}</button>`)].join("") : "";
 }
 function visible(){
-  return PRODUCTS.filter(p =>
+  let l = PRODUCTS.filter(p =>
     (activeCat==="All" || p.cat===activeCat) &&
+    (!activeSub || p.sub===activeSub) &&
     (!activeOcc || p.occ.includes(activeOcc)) &&
-    (!query || (p.name+" "+p.cat+" "+p.occ.join(" ")).toLowerCase().includes(query))
+    (!query || (p.name+" "+p.cat+" "+(p.sub||"")+" "+p.occ.join(" ")).toLowerCase().includes(query))
   );
+  if(sortBy==="low") l = [...l].sort((a,b)=>a.price-b.price);
+  if(sortBy==="high") l = [...l].sort((a,b)=>b.price-a.price);
+  return l;
 }
-function renderProducts(){
-  const list = visible();
-  $("#emptyMsg").hidden = list.length > 0;
-  $("#productGrid").innerHTML = list.map(p => `
+function cardHTML(p){
+  return `
     <article class="card">
       ${p.tag?`<span class="tag">${p.tag}</span>`:""}
       <button class="heart ${wish.includes(p.id)?'on':''}" data-wish="${p.id}" aria-label="Add to wishlist">♥</button>
-      <div class="img" data-img="${p.id}">${art(p)}</div>
+      <div class="img" data-img="${p.id}"><img src="${localSrc(p)}" alt="${p.name.replace(/"/g,'&quot;')}" loading="lazy" decoding="async"
+        onerror="if(!this.dataset.r&&this.dataset.fb){this.dataset.r=1;this.src=this.dataset.fb}else{this.outerHTML=decodeURIComponent('${encodeURIComponent(art(p)).replace(/'/g,'%27')}')}" data-fb="${imgSrc(p)}"></div>
       <div class="info">
         <h3>${p.name}</h3>
         <div class="price">${money(p.price)}</div>
         <button class="btn" data-add="${p.id}">🛒 Add to Cart</button>
       </div>
-    </article>`).join("");
-  // swap in real photos if they exist
-  list.forEach(p=>{
-    const im = new Image(); im.alt = p.name; im.loading = "lazy";
-    im.onload = () => { const box = document.querySelector(`[data-img="${p.id}"]`); if(box) box.replaceChildren(im); };
-    im.src = p.img || `images/${p.id}.jpg`;   // optional: img:"images/my-photo.png" in the product
-  });
+    </article>`;
 }
+function renderProducts(){
+  const list = visible();
+  $("#emptyMsg").hidden = list.length > 0;
+  $("#resultCount").textContent = list.length ? `${Math.min(shown,list.length)} of ${list.length} items` : "";
+  $("#productGrid").innerHTML = list.slice(0,shown).map(cardHTML).join("");
+  $("#moreBtn").hidden = list.length <= shown;
+}
+const resetView = () => { shown = PAGE; };
 
 /* ---------- cart ---------- */
 const count = () => Object.values(cart).reduce((a,b)=>a+b,0);
@@ -154,7 +152,7 @@ function renderCart(){
   $("#cartItems").innerHTML = ids.length ? ids.map(id=>{
     const p = PRODUCTS.find(x=>x.id===id); if(!p) return "";
     return `<div class="line">
-      <div class="thumb"><img src="${p.img || `images/${p.id}.jpg`}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(art(p))}')"></div>
+      <div class="thumb"><img src="${localSrc(p)}" alt="" style="width:100%;height:100%;object-fit:cover" data-fb="${imgSrc(p)}" onerror="if(!this.dataset.r){this.dataset.r=1;this.src=this.dataset.fb}else{this.outerHTML=decodeURIComponent('${encodeURIComponent(art(p)).replace(/'/g,'%27')}')}"></div>
       <div><h4>${p.name}</h4><div class="price">${money(p.price)}</div>
         <div class="qty"><button data-dec="${id}">−</button><span>${cart[id]}</span><button data-inc="${id}">+</button></div></div>
       <button class="rm" data-rm="${id}" aria-label="Remove">✕</button></div>`;
@@ -182,16 +180,19 @@ document.addEventListener("click", e=>{
   else if(d.dec){ cart[d.dec]--; if(cart[d.dec]<=0) delete cart[d.dec]; saveCart(); }
   else if(d.rm){ delete cart[d.rm]; saveCart(); }
   else if(d.wish){ wish = wish.includes(d.wish)? wish.filter(x=>x!==d.wish) : [...wish,d.wish]; store.set("mm_wish",wish); t.classList.toggle("on"); }
-  else if(d.cat){ activeCat=d.cat; activeOcc=null; buildFilters(); renderProducts(); }
-  else if(d.filter){ activeOcc=d.filter; activeCat="All"; buildFilters(); renderProducts(); toast(`Showing ${d.filter} gifts`); $("#shop").scrollIntoView({behavior:"smooth"}); }
+  else if(d.cat!==undefined){ activeCat=d.cat; activeSub=null; activeOcc=null; resetView(); buildFilters(); renderProducts(); }
+  else if(d.sub!==undefined){ activeSub=d.sub||null; resetView(); buildFilters(); renderProducts(); }
+  else if(d.filter){ activeOcc=d.filter; activeCat="All"; activeSub=null; resetView(); buildFilters(); renderProducts(); toast(`Showing ${d.filter} gifts`); $("#shop").scrollIntoView({behavior:"smooth"}); }
 });
 $("#cartBtn").onclick = () => openCart(true);
 $("#closeCart").onclick = $("#overlay").onclick = () => openCart(false);
 $("#checkoutBtn").onclick = checkout;
+$("#moreBtn").onclick = () => { shown += PAGE; renderProducts(); };
+$("#sortSel").onchange = e => { sortBy = e.target.value; resetView(); renderProducts(); };
 $("#menuToggle").onclick = () => $("#nav").classList.toggle("open");
 $("#nav").addEventListener("click", e=>{ if(e.target.tagName==="A") $("#nav").classList.remove("open"); });
-$("#searchForm").addEventListener("submit", e=>{ e.preventDefault(); query=$("#searchInput").value.trim().toLowerCase(); activeCat="All"; activeOcc=null; buildFilters(); renderProducts(); $("#shop").scrollIntoView({behavior:"smooth"}); });
-$("#searchInput").addEventListener("input", e=>{ if(!e.target.value){ query=""; renderProducts(); } });
+$("#searchForm").addEventListener("submit", e=>{ e.preventDefault(); query=$("#searchInput").value.trim().toLowerCase(); activeCat="All"; activeSub=null; activeOcc=null; resetView(); buildFilters(); renderProducts(); $("#shop").scrollIntoView({behavior:"smooth"}); });
+$("#searchInput").addEventListener("input", e=>{ if(!e.target.value){ query=""; resetView(); renderProducts(); } });
 $("#contactForm").addEventListener("submit", e=>{
   e.preventDefault(); const f=new FormData(e.target);
   const msg=`Hello ${SETTINGS.shopName}! I'm ${f.get("name")} (${f.get("phone")}).\n${f.get("message")}`;
